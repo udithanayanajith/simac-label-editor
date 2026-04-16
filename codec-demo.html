@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Codec Demo - Encoder & Decoder</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%);
+        color: #e8f0ff;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+
+      .panel {
+        background: #141823;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      h2 {
+        margin: 0 0 20px;
+        color: #60d5fa;
+        font-size: 20px;
+        font-weight: 600;
+      }
+
+      h3 {
+        margin: 20px 0 10px;
+        color: #98a9c7;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      button {
+        padding: 10px 16px;
+        margin: 8px 0;
+        background: linear-gradient(135deg, #60d5fa 0%, #4facfe 100%);
+        border: none;
+        border-radius: 8px;
+        color: #0a0e1a;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(96, 213, 250, 0.4);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      input[type="file"] {
+        padding: 10px;
+        margin: 8px 0;
+        border: 1px solid #2a3448;
+        border-radius: 8px;
+        background: #0d1117;
+        color: #e8f0ff;
+        width: 100%;
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+        margin: 16px 0;
+      }
+
+      .preview-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #0d1117;
+        border: 1px solid #2a3448;
+      }
+
+      .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .preview-item .label {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: #60d5fa;
+        font-size: 10px;
+        padding: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      textarea {
+        width: 100%;
+        height: 200px;
+        padding: 12px;
+        margin: 8px 0;
+        background: #0d1117;
+        color: #e8f0ff;
+        border: 1px solid #2a3448;
+        border-radius: 8px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        resize: vertical;
+      }
+
+      .output-box {
+        background: #0d1117;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #2a3448;
+        margin: 8px 0;
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        color: #60d5fa;
+        word-break: break-all;
+      }
+
+      .success {
+        color: #4ade80;
+      }
+
+      .error {
+        color: #f87171;
+      }
+
+      .info {
+        color: #60d5fa;
+      }
+
+      @media (max-width: 900px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- ENCODER PANEL -->
+      <div class="panel">
+        <h2>🔐 ENCODER</h2>
+
+        <h3>Load Images</h3>
+        <input type="file" id="fileInput" multiple accept="image/*" />
+        <button onclick="encodeFiles()">Encode Selected Files</button>
+
+        <h3>Or Paste Base64</h3>
+        <textarea
+          id="base64Input"
+          placeholder="Paste base64 string here..."
+        ></textarea>
+        <button onclick="encodeBase64()">Convert Base64 to Data URI</button>
+
+        <h3>Preview (Encoded)</h3>
+        <div id="previewEncoder" class="preview-grid"></div>
+
+        <h3>IMAGES Object Output</h3>
+        <button onclick="downloadEncodedJSON()">↓ Download JSON</button>
+        <button onclick="downloadEncodedJS()">↓ Download as .js</button>
+        <button onclick="copyEncodedObject()">📋 Copy Object</button>
+        <div id="encodedOutput" class="output-box"></div>
+      </div>
+
+      <!-- DECODER PANEL -->
+      <div class="panel">
+        <h2>🔓 DECODER</h2>
+
+        <h3>Paste IMAGES Object</h3>
+        <textarea
+          id="imagesInput"
+          placeholder='Paste IMAGES object like: { jelly: "data:image/jpeg;base64,..." }'
+        ></textarea>
+        <button onclick="parseAndValidate()">Parse & Validate</button>
+
+        <h3>Validation Result</h3>
+        <div id="validationResult" class="output-box"></div>
+
+        <h3>Preview (Decoded)</h3>
+        <div id="previewDecoder" class="preview-grid"></div>
+
+        <h3>Extract Data</h3>
+        <button onclick="downloadDecodedImages()">↓ Download All Images</button>
+        <button onclick="extractBase64All()">📋 Copy All Base64</button>
+        <button onclick="generateObjectURLs()">Generate Object URLs</button>
+        <div id="decoderOutput" class="output-box"></div>
+      </div>
+    </div>
+
+    <!-- Include the codec library -->
+    <script src="imageCodec.js"></script>
+
+    <script>
+      let encodedImages = {};
+      let decodedImages = {};
+
+      // ==================== ENCODER FUNCTIONS ====================
+
+      async function encodeFiles() {
+        const fileInput = document.getElementById("fileInput");
+        const files = fileInput.files;
+
+        if (files.length === 0) {
+          alert("Please select image files");
+          return;
+        }
+
+        const filesObj = {};
+        for (let file of files) {
+          const key = file.name.replace(/\.[^/.]+$/, "");
+          filesObj[key] = file;
+        }
+
+        try {
+          encodedImages = await ImageEncoder.encodeFiles(filesObj);
+          updateEncoderPreview();
+          displayEncodedOutput();
+          log("✅ Encoded " + Object.keys(encodedImages).length + " files");
+        } catch (error) {
+          log("❌ Error encoding: " + error.message, "error");
+        }
+      }
+
+      function encodeBase64() {
+        const base64Input = document.getElementById("base64Input").value.trim();
+        if (!base64Input) {
+          alert("Please paste a base64 string");
+          return;
+        }
+
+        const key = "image_" + Date.now();
+        const dataURI = ImageEncoder.toDataURI(base64Input, "image/jpeg");
+        encodedImages[key] = dataURI;
+        updateEncoderPreview();
+        displayEncodedOutput();
+        log("✅ Base64 converted to data URI");
+      }
+
+      function updateEncoderPreview() {
+        const preview = document.getElementById("previewEncoder");
+        preview.innerHTML = Object.entries(encodedImages)
+          .map(
+            ([key, dataURI]) => `
+        <div class="preview-item">
+          <img src="${dataURI}" alt="${key}" />
+          <div class="label">${key}</div>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      function displayEncodedOutput() {
+        const output = document.getElementById("encodedOutput");
+        const code = ImageEncoder.toJavaScript(encodedImages);
+        output.textContent = code;
+      }
+
+      function downloadEncodedJSON() {
+        if (Object.keys(encodedImages).length === 0) {
+          alert("No images encoded yet");
+          return;
+        }
+        ImageEncoder.downloadJSON(encodedImages);
+        log("✅ Downloaded as images.json");
+      }
+
+      function downloadEncodedJS() {
+        if (Object.keys(encodedImages).length === 0) {
+          alert("No images encoded yet");
+          return;
+        }
+        ImageEncoder.downloadJS(encodedImages);
+        log("✅ Downloaded as images.js");
+      }
+
+      function copyEncodedObject() {
+        const code = ImageEncoder.toJavaScript(encodedImages);
+        navigator.clipboard
+          .writeText(code)
+          .then(() => log("✅ Copied to clipboard"))
+          .catch(() => log("❌ Copy failed", "error"));
+      }
+
+      // ==================== DECODER FUNCTIONS ====================
+
+      function parseAndValidate() {
+        const input = document.getElementById("imagesInput").value.trim();
+        if (!input) {
+          alert("Please paste an IMAGES object");
+          return;
+        }
+
+        try {
+          // Remove "const IMAGES = " prefix if present
+          let cleanedInput = input
+            .replace(/^const\s+IMAGES\s*=\s*/, "")
+            .replace(/;$/, "");
+
+          // Check if object is incomplete (missing closing brace)
+          const openBraces = (cleanedInput.match(/{/g) || []).length;
+          const closeBraces = (cleanedInput.match(/}/g) || []).length;
+
+          if (openBraces > closeBraces) {
+            cleanedInput += "}".repeat(openBraces - closeBraces);
+            log("⚠️ Auto-completed incomplete object", "info");
+          }
+
+          // Check if object is incomplete (missing value)
+          if (cleanedInput.match(/:\s*$/)) {
+            cleanedInput += '""'; // Add empty string as default value
+            log("⚠️ Added empty string value", "info");
+          }
+
+          // Eval is generally unsafe, but here we're in a controlled demo
+          decodedImages = Function(
+            '"use strict"; return (' + cleanedInput + ")",
+          )();
+
+          const validation = ImageDecoder.validate(decodedImages);
+          displayValidationResult(validation);
+
+          if (validation.valid) {
+            updateDecoderPreview();
+            log(
+              "✅ Valid IMAGES object with " +
+                Object.keys(decodedImages).length +
+                " items",
+            );
+          } else {
+            log("⚠️ Object parsed but validation failed", "error");
+          }
+        } catch (error) {
+          log("❌ Parse error: " + error.message, "error");
+        }
+      }
+
+      function displayValidationResult(validation) {
+        const resultDiv = document.getElementById("validationResult");
+        if (validation.valid) {
+          resultDiv.innerHTML =
+            '<span class="success">✅ VALID - Object format is correct</span>';
+        } else {
+          resultDiv.innerHTML =
+            '<span class="error">❌ INVALID - Errors found:</span><br/>' +
+            validation.errors.map((e) => "• " + e).join("<br/>");
+        }
+      }
+
+      function updateDecoderPreview() {
+        const preview = document.getElementById("previewDecoder");
+        preview.innerHTML = Object.entries(decodedImages)
+          .map(
+            ([key, dataURI]) => `
+        <div class="preview-item">
+          <img src="${dataURI}" alt="${key}" />
+          <div class="label">${key}</div>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      function downloadDecodedImages() {
+        if (Object.keys(decodedImages).length === 0) {
+          alert("No images decoded yet");
+          return;
+        }
+        ImageDecoder.downloadAll(decodedImages);
+        log("✅ Downloading all images...");
+      }
+
+      function extractBase64All() {
+        if (Object.keys(decodedImages).length === 0) {
+          alert("No images decoded yet");
+          return;
+        }
+
+        const output = document.getElementById("decoderOutput");
+        const base64List = Object.entries(decodedImages)
+          .map(([key, dataURI]) => {
+            const base64 = ImageDecoder.extractBase64(dataURI);
+            return `${key}:
+${base64}`;
+          })
+          .join("\n\n---\n\n");
+
+        output.textContent = base64List;
+        log("✅ Base64 extracted");
+      }
+
+      function generateObjectURLs() {
+        if (Object.keys(decodedImages).length === 0) {
+          alert("No images decoded yet");
+          return;
+        }
+
+        const urls = ImageDecoder.toObjectURLs(decodedImages);
+        const output = document.getElementById("decoderOutput");
+        output.textContent = JSON.stringify(urls, null, 2);
+        log("✅ Object URLs generated (valid for this session only)");
+      }
+
+      // ==================== UTILITIES ====================
+
+      function log(message, type = "success") {
+        console.log(message);
+        const className =
+          type === "error" ? "error" : type === "info" ? "info" : "success";
+        const div = document.createElement("div");
+        div.innerHTML = `<span class="${className}">${message}</span>`;
+        // Could also display in UI if needed
+      }
+    </script>
+  </body>
+</html>
